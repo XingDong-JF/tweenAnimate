@@ -1,30 +1,33 @@
 /**
  * name: tweenAnimate.js
  * describe: 用于封装动画的方法函数
- * version: 1.0.0
- * time: 2025/8/5 20:19
+ * version: 1.1.0
+ * time: 2025/8/9 09:57
  * 
  * -- 参数 --
- * arguments[0]: Object -必填 动画实施的对象主体
- * arguments[1]: Object -必填 需要变化的CSS属性与值
- * arguments[2]: Number -必填 动画持续时间
- * arguments[3]: Object -可选 动画的运动函数名和时间函数名
- * arguments[4]: Function -可选 动画结束运行的函数名
+ * eleObj: Object -必填 动画实施的对象主体
+ * styleObj: Object -必填 需要变化的CSS属性与值
+ * durateTime: Number -必填 动画持续时间
+ * tweenObj: Object -可选 动画的运动函数名和时间函数名
+ * callback: Function -可选 动画结束运行的函数名
  * 
  * -- 返回值 --
  * return 无
  */
 // getSprots(box, { left: leftValue, top: topValue, opacity: opacityValue }, 3000, {Type: Mode}, getCallback)
-function tweenAnimate(arguments) {
+function tweenAnimate(eleObj,styleObj,durateTime,tweenObj,callback) {
+    // 9.0 设置锁
+    if (eleObj.lock) return;
+    eleObj.lock = true;
 
     // 1.判断参数是否合法
     // 1.1 必填参数个数
     if (arguments.length < 3 || arguments.length > 5) throw console.error('请输入正确参数个数！');
     // 1.2 必填参数类型
     if (
-        Object.prototype.toString.call(arguments[0]) !== '[object Object]' ||
-        Object.prototype.toString.call(arguments[1]) !== '[object Object]' ||
-        Object.prototype.toString.call(arguments[2]) !== '[object Number]'
+        Object.prototype.toString.call(eleObj) !== '[object Object]' ||
+        Object.prototype.toString.call(styleObj) !== '[object Object]' ||
+        Object.prototype.toString.call(durateTime) !== '[object Number]'
     ) throw console.error('请输入合法参数！');
     // 1.3 长度为4的剩余参数校验
     // 1.3.1定义初始值
@@ -32,38 +35,38 @@ function tweenAnimate(arguments) {
     let getCallback;
     if (arguments.length === 4) {
         if (
-            !(Object.prototype.toString.call(arguments[3]) === '[object Object]' ||
-                Object.prototype.toString.call(arguments[3]) === '[object Function]')
+            !(Object.prototype.toString.call(tweenObj) === '[object Object]' ||
+                Object.prototype.toString.call(tweenObj) === '[object Function]')
         ) { throw console.error('请输入合法参数！'); }
         else {
             // 1.3.2对应赋值
-            if (Object.prototype.toString.call(arguments[3]) === '[object Object]') {
-                tweenObj = arguments[3];
+            if (Object.prototype.toString.call(tweenObj) === '[object Object]') {
+                tweenObj = tweenObj;
             } else {
-                getCallback = arguments[3];
+                getCallback = tweenObj;
             }
         }
     }
     // 1.4 长度为5的剩余参数校验
     if (arguments.length === 5) {
-        if (Object.prototype.toString.call(arguments[3]) === Object.prototype.toString.call(arguments[4])) {
+        if (Object.prototype.toString.call(tweenObj) === Object.prototype.toString.call(callback)) {
             throw console.error('请输入合法参数！');
         }
         else {
             if (
-                !(Object.prototype.toString.call(arguments[3]) === '[object Object]' ||
-                    Object.prototype.toString.call(arguments[3]) === '[object Function]') ||
-                !(Object.prototype.toString.call(arguments[4]) === '[object Object]' ||
-                    Object.prototype.toString.call(arguments[4]) === '[object Function]')
+                !(Object.prototype.toString.call(tweenObj) === '[object Object]' ||
+                    Object.prototype.toString.call(tweenObj) === '[object Function]') ||
+                !(Object.prototype.toString.call(callback) === '[object Object]' ||
+                    Object.prototype.toString.call(callback) === '[object Function]')
             ) { throw console.error('请输入合法参数！'); }
             else {
                 // 1.4.1对应赋值
-                if (Object.prototype.toString.call(arguments[3]) === '[object Object]') {
-                    tweenObj = arguments[3];
-                    getCallback = arguments[4];
+                if (Object.prototype.toString.call(tweenObj) === '[object Object]') {
+                    tweenObj = tweenObj;
+                    getCallback = callback;
                 } else {
-                    tweenObj = arguments[4];
-                    getCallback = arguments[3];
+                    tweenObj = callback;
+                    getCallback = tweenObj;
                 }
             }
         }
@@ -71,20 +74,20 @@ function tweenAnimate(arguments) {
 
     // 2.获取初始值
     const startObj = {};
-    for (let k in arguments[1]) {
-        startObj[k] = fetchComputedStyle(arguments[0], k);
+    for (let k in styleObj) {
+        startObj[k] = fetchComputedStyle(eleObj, k);
     }
 
     // 3.获取变化总值
     const changeObj = {};
-    for (let k in arguments[1]) {
-        changeObj[k] = arguments[1][k] - startObj[k];
+    for (let k in styleObj) {
+        changeObj[k] = styleObj[k] - startObj[k];
     }
 
     // 10.设置布长变量
     const stepObj = {};
-    for (let k in arguments[1]) {
-        stepObj[k] = (arguments[1][k] - startObj[k]) / totalCount;
+    for (let k in styleObj) {
+        stepObj[k] = (styleObj[k] - startObj[k]) / totalCount;
     }
 
     // 11.设置中间变量
@@ -99,7 +102,7 @@ function tweenAnimate(arguments) {
     // 4.定义当前时间/次数
     let count = 0;
     // 6.定义总次数
-    let totalCount = parseInt(arguments[2] / interval);
+    let totalCount = parseInt(durateTime / interval);
     // 8.获取tweenObj的具体值  --Object.getOwnPropertyNames()方法也可以使用
     let tweenKey; // easingType:运动类型
     let tweenValue; // easingMode:时间函数(可以为''/'null')
@@ -125,28 +128,28 @@ function tweenAnimate(arguments) {
                 // 5.3 判断是否使用tweenObj
                 if (tweenObj === undefined) {
                     // 中间变量直接赋值
-                    arguments[0].style[k] = temObj[k];
+                    eleObj.style[k] = temObj[k];
                 } else {
                     // 判断是否为Linear
                     if (tweenKey === 'Linear') {
                         // (当前次数 ，初始值 ，变化总值 ，总次数)
-                        arguments[0].style[k] = Math.tween[tweenKey](count, startObj[k], changeObj[k], totalCount);
+                        eleObj.style[k] = Math.tween[tweenKey](count, startObj[k], changeObj[k], totalCount);
                     } else {
-                        arguments[0].style[k] = Math.tween[tweenKey][tweenValue](count, startObj[k], changeObj[k], totalCount);
+                        eleObj.style[k] = Math.tween[tweenKey][tweenValue](count, startObj[k], changeObj[k], totalCount);
                     }
                 }
             } else {
                 // 5.3 判断是否使用tweenObj
                 if (tweenObj === undefined) {
                     // 中间变量直接赋值，避免单位字符串影响 
-                    arguments[0].style[k] = temObj[k] + 'px';
+                    eleObj.style[k] = temObj[k] + 'px';
                 } else {
                     // 判断是否为Linear
                     if (tweenKey === 'Linear') {
                         // (当前次数 ，初始值 ，变化总值 ，总次数)
-                        arguments[0].style[k] = Math.tween[tweenKey](count, startObj[k], changeObj[k], totalCount) + 'px';
+                        eleObj.style[k] = Math.tween[tweenKey](count, startObj[k], changeObj[k], totalCount) + 'px';
                     } else {
-                        arguments[0].style[k] = Math.tween[tweenKey][tweenValue](count, startObj[k], changeObj[k], totalCount) + 'px';
+                        eleObj.style[k] = Math.tween[tweenKey][tweenValue](count, startObj[k], changeObj[k], totalCount) + 'px';
                     }
                 }
             }
@@ -159,17 +162,17 @@ function tweenAnimate(arguments) {
             // 5.6 强制终点误差
             for (let k in changeObj) {
                 if (k === 'opacity') {
-                    arguments[0].style[k] = arguments[1][k];
+                    eleObj.style[k] = styleObj[k];
                 } else {
-                    arguments[0].style[k] = arguments[1][k] + 'px';
+                    eleObj.style[k] = styleObj[k] + 'px';
                 }
             }
             // 5.7判断是否有完成时执行的回调函数
             if (getCallback !== undefined) {
-                getCallback.call(arguments[0]);
+                getCallback.call(eleObj);
             }
             // 9.1解锁
-            arguments[0].lock = false;
+            eleObj.lock = false;
         }
     }, interval)
 
